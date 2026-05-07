@@ -63,6 +63,9 @@ class Game {
     this.screenShake = 0;
     this.frameCount  = 0;
     this._stars      = this._genStars(90);
+    this._lastTime   = null;    // for fixed-timestep loop
+    this._accumulator = 0;
+    this._fixedStep   = 1000 / 60;  // ms per logic tick (locked to 60 fps)
 
     // State machine: 'title' | 'playing' | 'gameover'
     this.state = 'title';
@@ -70,7 +73,7 @@ class Game {
     this._showScreen('title-screen');
 
     this._setupResize();
-    requestAnimationFrame(() => this._loop());
+    requestAnimationFrame((ts) => this._loop(ts));
   }
 
   // ── Input ────────────────────────────────────────────────────────────────
@@ -136,11 +139,21 @@ class Game {
 
   // ── Core loop ────────────────────────────────────────────────────────────
 
-  _loop() {
-    this._update();
+  _loop(timestamp) {
+    if (this._lastTime === null) this._lastTime = timestamp;
+    // Cap delta to 100 ms to avoid spiral-of-death after tab switching
+    const delta = Math.min(timestamp - this._lastTime, 100);
+    this._lastTime = timestamp;
+    this._accumulator += delta;
+
+    while (this._accumulator >= this._fixedStep) {
+      this._update();
+      this._pressed.clear();
+      this._accumulator -= this._fixedStep;
+    }
+
     this._render();
-    this._pressed.clear();
-    requestAnimationFrame(() => this._loop());
+    requestAnimationFrame((ts) => this._loop(ts));
   }
 
   _update() {
@@ -188,11 +201,10 @@ class Game {
       const hb       = attacker.getAttackHitbox();
       if (!hb) continue;
 
-      // Circle-vs-rect: is defender centre inside hitbox?
-      if (
-        defender.x >= hb.x && defender.x <= hb.x + hb.w &&
-        defender.y >= hb.y && defender.y <= hb.y + hb.h
-      ) {
+      // Circle-vs-rect: clamp defender centre to rect, check distance vs blob radius
+      const cx = Math.max(hb.x, Math.min(defender.x, hb.x + hb.w));
+      const cy = Math.max(hb.y, Math.min(defender.y, hb.y + hb.h));
+      if (Math.hypot(defender.x - cx, defender.y - cy) < BLOB_RADIUS * 0.85) {
         const hit = defender.applyHit(
           SHORT_DAMAGE,
           attacker.facing * SHORT_KB_X,

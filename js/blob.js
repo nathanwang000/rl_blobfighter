@@ -281,12 +281,13 @@ class Blob {
    */
   getAttackHitbox() {
     if (!this.isAttacking || this.attackHit) return null;
-    const hx = this.facing === 1 ? this.x : this.x - SHORT_RANGE;
+    // Box starts at the blob's EDGE, not its centre
+    const hx = this.facing === 1 ? this.x + BLOB_RADIUS * 0.5 : this.x - BLOB_RADIUS * 0.5 - SHORT_RANGE;
     return {
       x: hx,
-      y: this.y - BLOB_RADIUS * 0.85,
+      y: this.y - BLOB_RADIUS * 0.95,
       w: SHORT_RANGE,
-      h: BLOB_RADIUS * 1.7,
+      h: BLOB_RADIUS * 1.9,
     };
   }
 
