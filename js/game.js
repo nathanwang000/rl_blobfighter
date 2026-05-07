@@ -94,14 +94,18 @@ class Game {
   _wasPressed(key){ return this._pressed.has(key); }
 
   _getP1Actions() {
+    const aimX = this._isHeld(KEYS.P1_RIGHT) ? 1 : this._isHeld(KEYS.P1_LEFT) ? -1 : 0;
+    const aimY = this._isHeld(KEYS.P1_AIM_UP) ? -1 : this._isHeld(KEYS.P1_DROP) ? 1 : 0;
     return {
       left:        this._isHeld(KEYS.P1_LEFT),
       right:       this._isHeld(KEYS.P1_RIGHT),
-      jump:        this._isHeld(KEYS.P1_JUMP),      // held; blob handles tap logic
-      drop:        this._isHeld(KEYS.P1_DROP),       // held; combine with jump to fall through
+      jump:        this._isHeld(KEYS.P1_JUMP),
+      drop:        this._isHeld(KEYS.P1_DROP),
       dash:        this._wasPressed(KEYS.P1_DASH),
       shortAttack: this._wasPressed(KEYS.P1_SHORT_ATTACK),
       longAttack:  this._wasPressed(KEYS.P1_LONG_ATTACK),
+      aimX,
+      aimY,
     };
   }
 
@@ -424,10 +428,12 @@ class Game {
   // ── Helper spawners ───────────────────────────────────────────────────────
 
   _spawnProjectile(blob) {
+    const spd  = PROJ_SPEED;
     const proj = new Projectile(
-      blob.x + blob.facing * (BLOB_RADIUS + 2),
-      blob.y,
-      blob.facing * PROJ_SPEED,
+      blob.x + blob._projAimX * (BLOB_RADIUS + 2),
+      blob.y + blob._projAimY * (BLOB_RADIUS + 2),
+      blob._projAimX * spd,
+      blob._projAimY * spd,
       blob.playerIndex,
     );
     this.projectiles.push(proj);

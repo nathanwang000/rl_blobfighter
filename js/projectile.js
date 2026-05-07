@@ -4,14 +4,15 @@ class Projectile {
   /**
    * @param {number} x       - Spawn X
    * @param {number} y       - Spawn Y
-   * @param {number} vx      - Horizontal velocity (sign encodes direction)
+   * @param {number} vx      - Horizontal velocity
+   * @param {number} vy      - Vertical velocity
    * @param {number} owner   - Player index (0 or 1) that fired this
    */
-  constructor(x, y, vx, owner) {
+  constructor(x, y, vx, vy, owner) {
     this.x = x;
     this.y = y;
     this.vx = vx;
-    this.vy = 0;
+    this.vy = vy;
     this.owner = owner;
     this.radius = PROJ_RADIUS;
     this.lifetime = PROJ_LIFETIME;

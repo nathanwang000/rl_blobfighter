@@ -72,6 +72,13 @@ class Blob {
     // Sound events emitted this frame for game.js to consume
     this.soundEvents = [];
 
+    // Stored aim direction at the moment each attack was initiated
+    // (normalised unit vector; separate for melee vs projectile)
+    this._attackAimX = this.facing;
+    this._attackAimY = 0;
+    this._projAimX   = this.facing;
+    this._projAimY   = 0;
+
     // Squish/stretch animation scalars
     this.squishX = 1;
     this.squishY = 1;
@@ -172,6 +179,15 @@ class Blob {
 
     // ── Short attack ───────────────────────────────────────────────────────
     if (canAct && actions.shortAttack && this.shortCooldown === 0 && !this.isDashing) {
+      // Capture and normalise the aim direction at the moment of attack.
+      // Only fall back to facing when no directional key is held at all.
+      const aimX = actions.aimX ?? 0;
+      const aimY = actions.aimY ?? 0;
+      const rawX = aimX !== 0 ? aimX : (aimY === 0 ? this.facing : 0);
+      const rawY = aimY;
+      const len  = Math.hypot(rawX, rawY) || 1;
+      this._attackAimX   = rawX / len;
+      this._attackAimY   = rawY / len;
       this.shortTimer    = SHORT_DURATION;
       this.shortCooldown = SHORT_COOLDOWN;
       this.attackHit     = false;
@@ -180,9 +196,16 @@ class Blob {
       this.soundEvents.push('swing');
     }
 
-    // ── Long attack ────────────────────────────────────────────────────────
+    // ── Long attack ─────────────────────────────────────────────────────────────
     this.pendingProjectile = false;
     if (canAct && actions.longAttack && this.longCooldown === 0 && !this.isDashing) {
+      const aimX = actions.aimX ?? 0;
+      const aimY = actions.aimY ?? 0;
+      const rawX = aimX !== 0 ? aimX : (aimY === 0 ? this.facing : 0);
+      const rawY = aimY;
+      const len  = Math.hypot(rawX, rawY) || 1;
+      this._projAimX         = rawX / len;
+      this._projAimY         = rawY / len;
       this.longCooldown      = LONG_COOLDOWN;
       this.pendingProjectile = true;
     }
@@ -281,14 +304,12 @@ class Blob {
    */
   getAttackHitbox() {
     if (!this.isAttacking || this.attackHit) return null;
-    // Box starts at the blob's EDGE, not its centre
-    const hx = this.facing === 1 ? this.x + BLOB_RADIUS * 0.5 : this.x - BLOB_RADIUS * 0.5 - SHORT_RANGE;
-    return {
-      x: hx,
-      y: this.y - BLOB_RADIUS * 0.95,
-      w: SHORT_RANGE,
-      h: BLOB_RADIUS * 1.9,
-    };
+    // Hitbox is a square centred on the tip of the attack arm in the aim direction
+    const reach = BLOB_RADIUS * 0.5 + SHORT_RANGE * 0.55;
+    const cx    = this.x + this._attackAimX * reach;
+    const cy    = this.y + this._attackAimY * reach;
+    const half  = SHORT_RANGE * 0.5;
+    return { x: cx - half, y: cy - half, w: SHORT_RANGE, h: SHORT_RANGE };
   }
 
   // ── Rendering ─────────────────────────────────────────────────────────────
@@ -376,6 +397,9 @@ class Blob {
       const progress  = 1 - this.shortTimer / SHORT_DURATION;
       const armLength = SHORT_RANGE * (0.25 + 0.75 * Math.sin(progress * Math.PI));
       const alpha     = 0.65 * (1 - progress);
+      // Arm draws in the stored aim direction
+      const nx = this._attackAimX;
+      const ny = this._attackAimY;
 
       ctx.save();
       ctx.globalAlpha    = alpha;
@@ -385,19 +409,20 @@ class Blob {
       ctx.lineWidth      = 9;
       ctx.lineCap        = 'round';
       ctx.beginPath();
-      ctx.moveTo(this.facing * r * 0.6, 0);
-      ctx.lineTo(this.facing * (r + armLength), 0);
+      ctx.moveTo(nx * r * 0.6, ny * r * 0.6);
+      ctx.lineTo(nx * (r + armLength), ny * (r + armLength));
       ctx.stroke();
 
       // Impact star at tip
       if (progress > 0.3) {
         ctx.globalAlpha = alpha * 1.2;
         ctx.lineWidth   = 3;
-        const tipX = this.facing * (r + armLength);
+        const tipX = nx * (r + armLength);
+        const tipY = ny * (r + armLength);
         for (let a = 0; a < Math.PI * 2; a += Math.PI / 3) {
           ctx.beginPath();
-          ctx.moveTo(tipX, 0);
-          ctx.lineTo(tipX + Math.cos(a) * 10, Math.sin(a) * 10);
+          ctx.moveTo(tipX, tipY);
+          ctx.lineTo(tipX + Math.cos(a) * 10, tipY + Math.sin(a) * 10);
           ctx.stroke();
         }
       }

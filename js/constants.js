@@ -10,7 +10,8 @@ const KEYS = {
   P1_LEFT:         'ArrowLeft',
   P1_RIGHT:        'ArrowRight',
   P1_JUMP:         'x',
-  P1_DROP:         'ArrowDown',   // hold + jump to drop through platform
+  P1_AIM_UP:       'ArrowUp',    // hold while attacking to aim upward
+  P1_DROP:         'ArrowDown',  // hold + jump to drop through; also aims attacks downward
   P1_DASH:         's',
   P1_SHORT_ATTACK: 'z',
   P1_LONG_ATTACK:  'a',

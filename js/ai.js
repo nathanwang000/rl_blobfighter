@@ -27,7 +27,7 @@
  */
 class AIController {
   getAction(/* state, playerIndex */) {
-    return { left: false, right: false, jump: false, drop: false, dash: false, shortAttack: false, longAttack: false };
+    return { left: false, right: false, jump: false, drop: false, dash: false, shortAttack: false, longAttack: false, aimX: 0, aimY: 0 };
   }
 
   // ── Helpers for neural-network subclasses ─────────────────────────────────
@@ -100,6 +100,9 @@ class AIController {
       dash:        output[4] > threshold,
       shortAttack: output[5] > threshold,
       longAttack:  output[6] > threshold,
+      // Aim encoded as two separate bits each; resolve to {-1, 0, 1}
+      aimX: (output[7] > threshold ? 1 : 0) - (output[8] > threshold ? 1 : 0),
+      aimY: (output[10] > threshold ? 1 : 0) - (output[9] > threshold ? 1 : 0),
     };
   }
 }
@@ -223,6 +226,10 @@ class TrajectoryRecordingAI extends AIController {
       action.dash        ? 1 : 0,
       action.shortAttack ? 1 : 0,
       action.longAttack  ? 1 : 0,
+      (action.aimX ?? 0) > 0 ? 1 : 0,  // aimRight
+      (action.aimX ?? 0) < 0 ? 1 : 0,  // aimLeft
+      (action.aimY ?? 0) < 0 ? 1 : 0,  // aimUp
+      (action.aimY ?? 0) > 0 ? 1 : 0,  // aimDown
     ]);
   }
 }
@@ -268,7 +275,10 @@ class RuleBasedAI extends AIController {
     const dist = Math.hypot(dx, dy);
     const dir  = Math.sign(dx) || 1;  // horizontal direction to opponent
 
-    const act = { left: false, right: false, jump: false, drop: false, dash: false, shortAttack: false, longAttack: false };
+    // Aim toward opponent: horizontal always, vertical only when opponent is significantly above/below
+    const aimX = Math.sign(dx) || 1;
+    const aimY = Math.abs(dy) > 55 ? Math.sign(dy) : 0;
+    const act = { left: false, right: false, jump: false, drop: false, dash: false, shortAttack: false, longAttack: false, aimX, aimY };
 
     if (this._jumpCooldown > 0) this._jumpCooldown--;
     if (this._longCooldown > 0) this._longCooldown--;
