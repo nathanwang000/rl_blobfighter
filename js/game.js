@@ -69,6 +69,7 @@ class Game {
 
     this._showScreen('title-screen');
 
+    this._setupResize();
     requestAnimationFrame(() => this._loop());
   }
 
@@ -94,6 +95,7 @@ class Game {
       left:        this._isHeld(KEYS.P1_LEFT),
       right:       this._isHeld(KEYS.P1_RIGHT),
       jump:        this._isHeld(KEYS.P1_JUMP),      // held; blob handles tap logic
+      drop:        this._isHeld(KEYS.P1_DROP),       // held; combine with jump to fall through
       dash:        this._wasPressed(KEYS.P1_DASH),
       shortAttack: this._wasPressed(KEYS.P1_SHORT_ATTACK),
       longAttack:  this._wasPressed(KEYS.P1_LONG_ATTACK),
@@ -119,6 +121,7 @@ class Game {
     this.ai          = new RuleBasedAI();
     this.state       = 'playing';
     this._showScreen(null);
+    SFX.startMusic();
   }
 
   _getGameState() {
@@ -162,7 +165,18 @@ class Game {
     // ── Update blobs ──────────────────────────────────────────────────────
     for (let i = 0; i < 2; i++) {
       this.blobs[i].update(allActions[i], this.platforms);
+      // Consume sound events from this frame
+      for (const ev of this.blobs[i].soundEvents) {
+        switch (ev) {
+          case 'jump':    SFX.playJump();        break;
+          case 'airjump': SFX.playAirJump();     break;
+          case 'land':    SFX.playLand();        break;
+          case 'dash':    SFX.playDash();        break;
+          case 'swing':   SFX.playMeleeSwing();  break;
+        }
+      }
       if (this.blobs[i].pendingProjectile) {
+        SFX.playProjFire();
         this._spawnProjectile(this.blobs[i]);
       }
     }
@@ -187,6 +201,7 @@ class Game {
         );
         if (hit) {
           attacker.attackHit = true;
+          SFX.playMeleeHit();
           this._spawnHitParticles(defender.x, defender.y, defender.color, 12);
           this.screenShake = Math.max(this.screenShake, 7);
         }
@@ -209,6 +224,7 @@ class Game {
         );
         if (hit) {
           proj.active = false;
+          SFX.playProjHit();
           this._spawnHitParticles(proj.x, proj.y, proj.color, 8);
           this.screenShake = Math.max(this.screenShake, 4);
         }
@@ -219,6 +235,7 @@ class Game {
     // ── Check health / stocks ─────────────────────────────────────────────
     for (const blob of this.blobs) {
       if (blob.health <= 0 && blob.invincible === 0) {
+        SFX.playDeath();
         this._spawnHitParticles(blob.x, blob.y, blob.color, 22);
         this.screenShake = Math.max(this.screenShake, 14);
         blob.loseStock();
@@ -378,6 +395,18 @@ class Game {
     ctx.fillStyle = '#ffffff33';
     ctx.textAlign = 'center';
     ctx.fillText(`BLOBFIGHT`, CANVAS_W / 2, padY + 12);
+  }
+
+  // ── Fullscreen scaling ─────────────────────────────────────────────────
+
+  _setupResize() {
+    const container = document.getElementById('container');
+    const resize = () => {
+      const s = Math.min(window.innerWidth / CANVAS_W, window.innerHeight / CANVAS_H);
+      container.style.transform = `scale(${s})`;
+    };
+    window.addEventListener('resize', resize);
+    resize();
   }
 
   // ── Helper spawners ───────────────────────────────────────────────────────

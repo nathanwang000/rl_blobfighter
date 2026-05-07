@@ -62,6 +62,16 @@ class Blob {
     // Jump-release guard: must release jump key before jumping again
     this.jumpReleased = true;
 
+    // Double-jump: air jumps remaining (reset on landing)
+    this.airJumpsLeft = MAX_AIR_JUMPS;
+    // Drop-through: frames during which non-ground platform collision is skipped
+    this.dropFrames   = 0;
+    // True when standing on the main ground (not a floating platform)
+    this.onMainGround = false;
+
+    // Sound events emitted this frame for game.js to consume
+    this.soundEvents = [];
+
     // Squish/stretch animation scalars
     this.squishX = 1;
     this.squishY = 1;
@@ -82,6 +92,9 @@ class Blob {
    * @param {Platform[]} platforms
    */
   update(actions, platforms) {
+    // Clear sound events from last frame
+    this.soundEvents = [];
+
     // ── Tick timers ────────────────────────────────────────────────────────
     if (this.shortCooldown > 0) this.shortCooldown--;
     if (this.longCooldown  > 0) this.longCooldown--;
@@ -92,6 +105,7 @@ class Blob {
     if (this.coyote        > 0) this.coyote--;
     if (this.invincible    > 0) this.invincible--;
     if (this.hitFlash      > 0) this.hitFlash--;
+    if (this.dropFrames    > 0) this.dropFrames--;
 
     // Reset per-swing hit flag when attack ends
     if (this.shortTimer === 0) this.attackHit = false;
@@ -120,21 +134,40 @@ class Blob {
 
     // ── Dash initiation ────────────────────────────────────────────────────
     if (canAct && actions.dash && !this.isDashing && this.dashCooldown === 0) {
-      this.dashDir     = this.facing;
-      this.dashTimer   = DASH_DURATION;
+      this.dashDir      = this.facing;
+      this.dashTimer    = DASH_DURATION;
       this.dashCooldown = DASH_COOLDOWN;
-      this.squishX     = 1.6;
-      this.squishY     = 0.55;
+      this.squishX      = 1.6;
+      this.squishY      = 0.55;
+      this.soundEvents.push('dash');
     }
 
-    // ── Jump ───────────────────────────────────────────────────────────────
-    if (canAct && actions.jump && this.jumpReleased && (this.onGround || this.coyote > 0)) {
+    // ── Jump / drop-through ────────────────────────────────────────────────
+    // Drop through floating platform: hold ↓ + press jump while on non-ground
+    if (canAct && actions.drop && actions.jump && this.jumpReleased &&
+        this.onGround && !this.onMainGround) {
+      this.dropFrames   = 14;
+      this.onGround     = false;
+      this.vy           = 2;    // small downward nudge to clear the platform
+      this.jumpReleased = false;
+    // Standard jump from ground / coyote window
+    } else if (canAct && actions.jump && this.jumpReleased && (this.onGround || this.coyote > 0)) {
       this.vy           = JUMP_VY;
       this.onGround     = false;
       this.coyote       = 0;
       this.jumpReleased = false;
+      this.airJumpsLeft = MAX_AIR_JUMPS;  // reset air jumps on any grounded jump
       this.squishX      = 0.72;
       this.squishY      = 1.4;
+      this.soundEvents.push('jump');
+    // Air / double jump
+    } else if (canAct && actions.jump && this.jumpReleased && !this.onGround && this.airJumpsLeft > 0) {
+      this.vy           = JUMP_VY * 0.88;
+      this.jumpReleased = false;
+      this.airJumpsLeft--;
+      this.squishX      = 0.80;
+      this.squishY      = 1.25;
+      this.soundEvents.push('airjump');
     }
 
     // ── Short attack ───────────────────────────────────────────────────────
@@ -144,6 +177,7 @@ class Blob {
       this.attackHit     = false;
       this.squishX       = 1.45;
       this.squishY       = 0.7;
+      this.soundEvents.push('swing');
     }
 
     // ── Long attack ────────────────────────────────────────────────────────
@@ -169,18 +203,24 @@ class Blob {
     this.onGround = false;
 
     for (const plat of platforms) {
+      // Skip non-ground platforms while actively dropping through
+      if (this.dropFrames > 0 && !plat.isGround) continue;
+
       const blobL = this.x - BLOB_RADIUS * 0.78;
       const blobR = this.x + BLOB_RADIUS * 0.78;
       const inX   = blobR > plat.x && blobL < plat.x + plat.w;
 
       if (inX && this.vy >= 0 && prevBottom <= plat.y + 2 && this.y + BLOB_RADIUS >= plat.y) {
-        this.y        = plat.y - BLOB_RADIUS;
-        this.vy       = 0;
-        this.onGround = true;
+        this.y            = plat.y - BLOB_RADIUS;
+        this.vy           = 0;
+        this.onGround     = true;
+        this.onMainGround = plat.isGround;
         if (!wasOnGround) {
-          // Landing squish
-          this.squishX = 1.35;
-          this.squishY = 0.65;
+          // Landing squish + reset air resources
+          this.squishX      = 1.35;
+          this.squishY      = 0.65;
+          this.airJumpsLeft = MAX_AIR_JUMPS;
+          this.soundEvents.push('land');
         }
         break;
       }
@@ -390,6 +430,7 @@ class Blob {
       dashCooldown:  this.dashCooldown,
       hitstun:       this.hitstun,
       invincible:    this.invincible,
+      airJumpsLeft:  this.airJumpsLeft,
     };
   }
 }

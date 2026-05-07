@@ -10,6 +10,7 @@ const KEYS = {
   P1_LEFT:         'ArrowLeft',
   P1_RIGHT:        'ArrowRight',
   P1_JUMP:         'x',
+  P1_DROP:         'ArrowDown',   // hold + jump to drop through platform
   P1_DASH:         's',
   P1_SHORT_ATTACK: 'z',
   P1_LONG_ATTACK:  'a',
@@ -36,6 +37,7 @@ const BLOB_RADIUS     = 26;
 const MAX_HEALTH      = 100;
 const MAX_STOCKS      = 2;    // lives per player
 const RESPAWN_FRAMES  = 100;  // invincibility frames after losing a stock
+const MAX_AIR_JUMPS   = 1;    // extra jumps available while airborne (double jump)
 
 // ── Short-range attack ────────────────────────────────────────────────────────
 const SHORT_RANGE      = 72;   // px hitbox reach
@@ -61,9 +63,19 @@ const PROJ_HITSTUN     = 12;
 // isGround: true means it's drawn as the main ground strip.
 const PLATFORM_DATA = [
   { x: 0,   y: 415, w: 800, h: 35, isGround: true },  // ground
-  { x: 90,  y: 305, w: 150, h: 16 },                  // left shelf
-  { x: 560, y: 305, w: 150, h: 16 },                  // right shelf
-  { x: 298, y: 215, w: 204, h: 16 },                  // centre top
+  // Near-ground steps (great for quick mix-ups)
+  { x: 180, y: 355, w: 100, h: 14 },                  // low-left step
+  { x: 520, y: 355, w: 100, h: 14 },                  // low-right step
+  // Mid-level shelves
+  { x: 65,  y: 295, w: 145, h: 14 },                  // mid-left shelf
+  { x: 590, y: 295, w: 145, h: 14 },                  // mid-right shelf
+  { x: 310, y: 275, w: 180, h: 14 },                  // centre-mid bridge
+  // Upper level
+  { x: 30,  y: 195, w: 100, h: 14 },                  // far-left upper
+  { x: 670, y: 195, w: 100, h: 14 },                  // far-right upper
+  { x: 285, y: 175, w: 230, h: 14 },                  // centre upper
+  // Apex — high skill ceiling
+  { x: 340, y: 90,  w: 120, h: 14 },                  // apex
 ];
 
 const SPAWN_P1 = { x: 180, y: 370 };

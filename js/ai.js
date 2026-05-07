@@ -27,14 +27,14 @@
  */
 class AIController {
   getAction(/* state, playerIndex */) {
-    return { left: false, right: false, jump: false, dash: false, shortAttack: false, longAttack: false };
+    return { left: false, right: false, jump: false, drop: false, dash: false, shortAttack: false, longAttack: false };
   }
 
   // ── Helpers for neural-network subclasses ─────────────────────────────────
 
   /**
    * Converts a game state snapshot into a normalised flat array.
-   * Vector length: 10 (self) + 10 (opponent) + MAX_PROJ_IN_STATE * 5 + 2 (relative) = 42
+   * Vector length: 11 (self) + 11 (opponent) + MAX_PROJ_IN_STATE * 5 + 2 (relative) = 44
    *
    * @param {{ players, projectiles, platforms }} state
    * @param {number} playerIndex  - 0 or 1
@@ -55,6 +55,7 @@ class AIController {
       p.shortCooldown / SHORT_COOLDOWN,
       p.longCooldown  / LONG_COOLDOWN,
       p.dashCooldown  / DASH_COOLDOWN,
+      (p.airJumpsLeft ?? MAX_AIR_JUMPS) / MAX_AIR_JUMPS,
     ];
 
     const v = [
@@ -95,9 +96,10 @@ class AIController {
       left:        output[0] > threshold,
       right:       output[1] > threshold,
       jump:        output[2] > threshold,
-      dash:        output[3] > threshold,
-      shortAttack: output[4] > threshold,
-      longAttack:  output[5] > threshold,
+      drop:        output[3] > threshold,
+      dash:        output[4] > threshold,
+      shortAttack: output[5] > threshold,
+      longAttack:  output[6] > threshold,
     };
   }
 }
@@ -217,6 +219,7 @@ class TrajectoryRecordingAI extends AIController {
       action.left        ? 1 : 0,
       action.right       ? 1 : 0,
       action.jump        ? 1 : 0,
+      action.drop        ? 1 : 0,
       action.dash        ? 1 : 0,
       action.shortAttack ? 1 : 0,
       action.longAttack  ? 1 : 0,
@@ -265,7 +268,7 @@ class RuleBasedAI extends AIController {
     const dist = Math.hypot(dx, dy);
     const dir  = Math.sign(dx) || 1;  // horizontal direction to opponent
 
-    const act = { left: false, right: false, jump: false, dash: false, shortAttack: false, longAttack: false };
+    const act = { left: false, right: false, jump: false, drop: false, dash: false, shortAttack: false, longAttack: false };
 
     if (this._jumpCooldown > 0) this._jumpCooldown--;
     if (this._longCooldown > 0) this._longCooldown--;
