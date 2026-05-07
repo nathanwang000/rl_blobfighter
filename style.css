@@ -1,0 +1,114 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: #05040f;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  font-family: 'Courier New', Courier, monospace;
+  color: #fff;
+  overflow: hidden;
+  user-select: none;
+}
+
+#container {
+  position: relative;
+  display: inline-block;
+  line-height: 0;
+}
+
+#gameCanvas {
+  display: block;
+  border: 2px solid #2a2a44;
+  border-radius: 6px;
+  box-shadow: 0 0 60px #0a0820, 0 0 120px #000;
+}
+
+/* ── Overlay screens ─────────────────────────────────────────────────────── */
+
+#overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none;
+}
+
+.overlay-screen {
+  text-align: center;
+  background: rgba(5, 4, 20, 0.88);
+  padding: 32px 52px;
+  border-radius: 14px;
+  border: 1px solid #33335566;
+  backdrop-filter: blur(4px);
+  pointer-events: auto;
+}
+
+h1 {
+  font-size: 3rem;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  text-shadow: 0 0 18px #33aaff, 0 0 40px #33aaff55;
+  margin-bottom: 24px;
+}
+
+/* ── Title screen controls layout ───────────────────────────────────────── */
+
+.controls-row {
+  display: flex;
+  gap: 48px;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.player-card {
+  text-align: left;
+  min-width: 140px;
+}
+
+.player-card h3 {
+  font-size: 0.95rem;
+  letter-spacing: 0.15em;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.p1-card h3 { color: #33aaff; }
+.p2-card h3 { color: #ff7733; }
+
+.player-card p {
+  font-size: 0.82rem;
+  color: #8888aa;
+  line-height: 1.9;
+}
+
+.player-card p span {
+  color: #ccccee;
+  font-weight: bold;
+}
+
+.press-start {
+  font-size: 1.05rem;
+  color: #aaaacc;
+  letter-spacing: 0.1em;
+  animation: blink 1.3s step-end infinite;
+  margin-top: 8px;
+}
+
+/* ── Game-over screen ────────────────────────────────────────────────────── */
+
+#winner-text {
+  font-size: 2.4rem;
+  text-shadow: 0 0 20px #ff7733, 0 0 50px #ff773355;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BlobFight</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="container">
+    <canvas id="gameCanvas" width="800" height="450"></canvas>
+
+    <div id="overlay">
+
+      <!-- Title screen -->
+      <div id="title-screen" class="overlay-screen">
+        <h1>BlobFight</h1>
+
+        <div class="controls-row">
+          <div class="player-card p1-card">
+            <h3>Player 1</h3>
+            <p><span>← →</span>  Move</p>
+            <p><span>X</span>    Jump</p>
+            <p><span>S</span>    Dash</p>
+            <p><span>Z</span>    Melee</p>
+            <p><span>A</span>    Blast</p>
+          </div>
+          <div class="player-card p2-card">
+            <h3>Opponent</h3>
+            <p>AI Controlled</p>
+            <p>&nbsp;</p>
+            <p>2 lives each</p>
+            <p>Last one standing wins</p>
+          </div>
+        </div>
+
+        <p class="press-start">Press ENTER to fight</p>
+      </div>
+
+      <!-- Game-over screen -->
+      <div id="gameover-screen" class="overlay-screen" style="display:none">
+        <h1 id="winner-text">WINNER!</h1>
+        <p class="press-start">Press ENTER to play again</p>
+      </div>
+
+    </div><!-- #overlay -->
+  </div><!-- #container -->
+
+  <!-- Load order matters: constants first, then helpers, then game -->
+  <script src="js/constants.js"></script>
+  <script src="js/platform.js"></script>
+  <script src="js/projectile.js"></script>
+  <script src="js/blob.js"></script>
+  <script src="js/ai.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
